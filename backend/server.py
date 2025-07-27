@@ -13,7 +13,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
-# Import ChatDev modules
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Multi-agent system using emergentintegrations
 import sys
 sys.path.append('/app')
 
