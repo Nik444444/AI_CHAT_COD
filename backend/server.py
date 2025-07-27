@@ -9,7 +9,6 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
@@ -18,30 +17,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Multi-agent system using emergentintegrations
-import sys
-sys.path.append('/app')
-
-# Set a temporary API key to avoid import errors
-os.environ.setdefault('OPENAI_API_KEY', 'temporary-key-placeholder')
-
 try:
-    from chatdev.chat_chain import ChatChain
-    from camel.typing import ModelType
-    CHATDEV_AVAILABLE = True
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    EMERGENT_AVAILABLE = True
+    logger.info("EmergentIntegrations loaded successfully")
 except ImportError as e:
-    print(f"ChatDev import failed: {e}")
-    CHATDEV_AVAILABLE = False
-    # Create a dummy ModelType class for development
-    class ModelType:
-        GPT_3_5_TURBO = "GPT_3_5_TURBO"
-        GPT_4 = "GPT_4"
-        GPT_4_TURBO = "GPT_4_TURBO"
-        GPT_4O = "GPT_4O"
-        GPT_4O_MINI = "GPT_4O_MINI"
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+    logger.warning(f"EmergentIntegrations import failed: {e}")
+    EMERGENT_AVAILABLE = False
 
 app = FastAPI(title="ChatDev Web API", version="1.0.0")
 
@@ -62,7 +44,7 @@ websocket_connections: Dict[str, WebSocket] = {}
 class ProjectRequest(BaseModel):
     task: str
     project_name: str
-    model_type: str = "GPT_4O_MINI"
+    model_type: str = "gpt-4o-mini"
     api_key: str
     provider: str = "openai"  # openai or gemini
 
@@ -79,35 +61,93 @@ class SessionInfo(BaseModel):
     model_type: str
     provider: str
 
-# Model type mapping
-if CHATDEV_AVAILABLE:
-    MODEL_MAPPING = {
-        "openai": {
-            "GPT_3_5_TURBO": ModelType.GPT_3_5_TURBO,
-            "GPT_4": ModelType.GPT_4,
-            "GPT_4_TURBO": ModelType.GPT_4_TURBO,
-            "GPT_4O": ModelType.GPT_4O,
-            "GPT_4O_MINI": ModelType.GPT_4O_MINI,
-        }
-        # Gemini support will be added later
+# Model mapping for different providers
+SUPPORTED_MODELS = {
+    "openai": [
+        "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3-5-turbo",
+        "o1", "o1-mini", "o1-pro"
+    ],
+    "gemini": [
+        "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"
+    ],
+    "anthropic": [
+        "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"
+    ]
+}
+
+# Multi-agent roles for software development
+AGENT_ROLES = {
+    "ceo": {
+        "name": "CEO",
+        "role": "Chief Executive Officer",
+        "system_message": """You are the CEO of a software development company. Your role is to:
+1. Analyze the project requirements and understand the business objectives
+2. Define the overall vision and scope of the project
+3. Make high-level decisions about project priorities
+4. Communicate requirements clearly to the development team
+5. Ensure the project meets business needs
+
+Keep your responses concise and business-focused."""
+    },
+    "cto": {
+        "name": "CTO", 
+        "role": "Chief Technology Officer",
+        "system_message": """You are the CTO of a software development company. Your role is to:
+1. Design the overall system architecture
+2. Choose appropriate technologies and frameworks
+3. Define technical specifications and requirements
+4. Ensure scalability, security, and performance considerations
+5. Guide the technical implementation approach
+
+Provide detailed technical specifications and architectural decisions."""
+    },
+    "programmer": {
+        "name": "Programmer",
+        "role": "Senior Software Developer",
+        "system_message": """You are a senior software developer. Your role is to:
+1. Write clean, well-documented code
+2. Implement features according to specifications
+3. Follow best practices and coding standards
+4. Create necessary configuration files
+5. Ensure code is functional and maintainable
+
+Generate complete, working code files with proper structure."""
+    },
+    "reviewer": {
+        "name": "Code Reviewer",
+        "role": "Senior Code Reviewer",
+        "system_message": """You are a senior code reviewer. Your role is to:
+1. Review code for quality, security, and best practices
+2. Identify potential bugs and issues
+3. Suggest improvements and optimizations
+4. Ensure code meets project requirements
+5. Provide constructive feedback
+
+Focus on code quality, security, and maintainability."""
+    },
+    "tester": {
+        "name": "QA Tester",
+        "role": "Quality Assurance Specialist", 
+        "system_message": """You are a QA tester. Your role is to:
+1. Create comprehensive test cases
+2. Identify potential edge cases and failure points
+3. Verify that features work as expected
+4. Document testing procedures
+5. Ensure quality standards are met
+
+Provide detailed testing scenarios and validation steps."""
     }
-else:
-    # Fallback mapping when ChatDev is not available
-    MODEL_MAPPING = {
-        "openai": {
-            "GPT_3_5_TURBO": "GPT_3_5_TURBO",
-            "GPT_4": "GPT_4",
-            "GPT_4_TURBO": "GPT_4_TURBO",
-            "GPT_4O": "GPT_4O",
-            "GPT_4O_MINI": "GPT_4O_MINI",
-        }
-        # Gemini support will be added later
-    }
+}
 
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    return {
+        "status": "healthy", 
+        "timestamp": datetime.now().isoformat(),
+        "emergent_available": EMERGENT_AVAILABLE,
+        "supported_providers": list(SUPPORTED_MODELS.keys())
+    }
 
 @app.get("/api/sessions")
 async def get_sessions():
@@ -127,15 +167,15 @@ async def get_sessions():
 
 @app.post("/api/sessions")
 async def create_session(request: ProjectRequest):
-    """Create a new ChatDev session"""
+    """Create a new multi-agent development session"""
     try:
         session_id = str(uuid.uuid4())
         
-        # Validate model type
-        if request.provider not in MODEL_MAPPING:
+        # Validate provider and model
+        if request.provider not in SUPPORTED_MODELS:
             raise HTTPException(status_code=400, detail=f"Unsupported provider: {request.provider}")
         
-        if request.model_type not in MODEL_MAPPING[request.provider]:
+        if request.model_type not in SUPPORTED_MODELS[request.provider]:
             raise HTTPException(status_code=400, detail=f"Unsupported model type: {request.model_type}")
         
         # Store session info
@@ -147,13 +187,14 @@ async def create_session(request: ProjectRequest):
             "api_key": request.api_key,
             "status": "created",
             "created_at": datetime.now().isoformat(),
-            "messages": []
+            "messages": [],
+            "files": {}
         }
         
         return {
             "session_id": session_id,
             "status": "created",
-            "message": "Session created successfully"
+            "message": "Multi-agent development session created successfully"
         }
         
     except Exception as e:
@@ -186,134 +227,326 @@ async def get_session_files(session_id: str):
         raise HTTPException(status_code=404, detail="Session not found")
     
     session = active_sessions[session_id]
-    project_name = session["project_name"]
+    files = session.get("files", {})
     
-    # Look for generated project in WareHouse
-    warehouse_path = Path("/app/WareHouse")
-    project_dirs = list(warehouse_path.glob(f"{project_name}_*"))
+    # Convert files dict to list format
+    file_list = []
+    for filename, content in files.items():
+        file_list.append({
+            "name": filename,
+            "path": filename,
+            "content": content,
+            "size": len(content.encode('utf-8'))
+        })
     
-    if not project_dirs:
-        return {"files": [], "message": "No generated files found"}
-    
-    # Get the most recent project directory
-    latest_dir = max(project_dirs, key=lambda p: p.stat().st_mtime)
-    
-    files = []
-    for file_path in latest_dir.rglob("*"):
-        if file_path.is_file():
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                
-                files.append({
-                    "name": file_path.name,
-                    "path": str(file_path.relative_to(latest_dir)),
-                    "content": content,
-                    "size": file_path.stat().st_size
-                })
-            except Exception as e:
-                logger.warning(f"Could not read file {file_path}: {e}")
-    
-    return {"files": files, "project_path": str(latest_dir)}
+    return {"files": file_list, "project_path": f"session_{session_id}"}
 
-async def run_chatdev_session(session_id: str, websocket: WebSocket):
-    """Run ChatDev session with real-time updates"""
+async def create_agent_chat(session_data: dict, agent_role: str) -> LlmChat:
+    """Create a chat instance for a specific agent role"""
+    if not EMERGENT_AVAILABLE:
+        raise Exception("EmergentIntegrations not available")
+    
+    agent_config = AGENT_ROLES[agent_role]
+    
+    chat = LlmChat(
+        api_key=session_data["api_key"],
+        session_id=f"{session_data.get('session_id', 'unknown')}_{agent_role}",
+        system_message=agent_config["system_message"]
+    )
+    
+    # Configure model based on provider
+    provider = session_data["provider"]
+    model = session_data["model_type"]
+    
+    chat.with_model(provider, model)
+    chat.with_max_tokens(4096)
+    
+    return chat
+
+async def run_multi_agent_development(session_id: str, websocket: WebSocket):
+    """Run multi-agent software development process"""
     try:
         session = active_sessions[session_id]
-        
-        # Set environment variables
-        if session["provider"] == "openai":
-            os.environ["OPENAI_API_KEY"] = session["api_key"]
-        
-        # Update session status
         session["status"] = "running"
+        
         await websocket.send_json({
             "type": "status",
-            "data": {"status": "running", "message": "Initializing ChatDev agents..."}
+            "data": {"status": "running", "message": "Initializing AI development agents..."}
         })
         
-        # Check if ChatDev is available
-        if not CHATDEV_AVAILABLE:
+        # Check if EmergentIntegrations is available
+        if not EMERGENT_AVAILABLE:
             await websocket.send_json({
                 "type": "error",
-                "data": {"message": "ChatDev is not available. Please check the installation and API key configuration."}
+                "data": {"message": "EmergentIntegrations is not available. Please check the installation."}
             })
             session["status"] = "error"
             return
         
-        # Get configuration paths
-        config_path = "/app/CompanyConfig/Default/ChatChainConfig.json"
-        config_phase_path = "/app/CompanyConfig/Default/PhaseConfig.json"
-        config_role_path = "/app/CompanyConfig/Default/RoleConfig.json"
+        project_name = session["project_name"]
+        task = session["task"]
         
-        # Initialize ChatChain
-        model_type = MODEL_MAPPING[session["provider"]][session["model_type"]]
-        
-        chat_chain = ChatChain(
-            config_path=config_path,
-            config_phase_path=config_phase_path,
-            config_role_path=config_role_path,
-            task_prompt=session["task"],
-            project_name=session["project_name"],
-            org_name="WebChatDev",
-            model_type=model_type,
-            code_path=""
-        )
-        
-        # Send updates to frontend
+        # Phase 1: CEO Analysis
         await websocket.send_json({
             "type": "agent_message",
             "data": {
-                "role": "System",
-                "message": f"Starting project: {session['project_name']}",
+                "role": "CEO",
+                "message": f"Starting analysis for project: {project_name}",
                 "timestamp": datetime.now().isoformat()
             }
         })
         
-        # Run ChatDev (this is a simplified version - we'll need to modify ChatDev to stream updates)
-        await websocket.send_json({
-            "type": "status",
-            "data": {"status": "processing", "message": "Agents are collaborating..."}
-        })
+        ceo_chat = await create_agent_chat(session, "ceo")
+        ceo_prompt = f"""
+        Analyze this software project request:
         
-        # This is where we'd integrate with ChatDev's execution
-        # For now, we'll simulate the process
-        await asyncio.sleep(2)
+        Project Name: {project_name}
+        Requirements: {task}
+        
+        Provide:
+        1. Business objectives and goals
+        2. Key features and functionality
+        3. Target audience and use cases
+        4. Project scope and priorities
+        5. Success criteria
+        
+        Keep it concise but comprehensive.
+        """
+        
+        ceo_response = await ceo_chat.send_message(UserMessage(text=ceo_prompt))
         
         await websocket.send_json({
             "type": "agent_message",
             "data": {
                 "role": "CEO",
-                "message": f"Analyzing requirements for {session['project_name']}...",
+                "message": ceo_response,
                 "timestamp": datetime.now().isoformat()
             }
         })
         
-        await asyncio.sleep(2)
-        
+        # Phase 2: CTO Architecture Design
         await websocket.send_json({
             "type": "agent_message",
             "data": {
-                "role": "CTO", 
+                "role": "CTO",
                 "message": "Designing system architecture...",
                 "timestamp": datetime.now().isoformat()
             }
         })
         
-        # Update status to completed
+        cto_chat = await create_agent_chat(session, "cto")
+        cto_prompt = f"""
+        Based on the CEO's analysis, design the technical architecture for:
+        
+        Project: {project_name}
+        Requirements: {task}
+        CEO Analysis: {ceo_response}
+        
+        Provide:
+        1. Technology stack recommendations
+        2. System architecture design
+        3. File structure and organization
+        4. Key technical specifications
+        5. Implementation approach
+        
+        Focus on practical, implementable solutions.
+        """
+        
+        cto_response = await cto_chat.send_message(UserMessage(text=cto_prompt))
+        
+        await websocket.send_json({
+            "type": "agent_message",
+            "data": {
+                "role": "CTO",
+                "message": cto_response,
+                "timestamp": datetime.now().isoformat()
+            }
+        })
+        
+        # Phase 3: Programming Implementation
+        await websocket.send_json({
+            "type": "agent_message",
+            "data": {
+                "role": "Programmer",
+                "message": "Implementing the application...",
+                "timestamp": datetime.now().isoformat()
+            }
+        })
+        
+        programmer_chat = await create_agent_chat(session, "programmer")
+        programmer_prompt = f"""
+        Implement the application based on the specifications:
+        
+        Project: {project_name}
+        Requirements: {task}
+        CEO Analysis: {ceo_response}
+        CTO Architecture: {cto_response}
+        
+        Generate complete, working code files. Include:
+        1. Main application files
+        2. Configuration files
+        3. Requirements/dependencies
+        4. README with instructions
+        5. Any necessary assets
+        
+        Provide the code in a structured format with clear file names and content.
+        Format your response as:
+        
+        **filename.ext**
+        ```language
+        code content here
+        ```
+        
+        **next_file.ext**
+        ```language
+        more code content
+        ```
+        
+        Make sure the code is complete and functional.
+        """
+        
+        programmer_response = await cto_chat.send_message(UserMessage(text=programmer_prompt))
+        
+        await websocket.send_json({
+            "type": "agent_message",
+            "data": {
+                "role": "Programmer",
+                "message": programmer_response,
+                "timestamp": datetime.now().isoformat()
+            }
+        })
+        
+        # Parse and extract code files
+        files = parse_code_from_response(programmer_response)
+        session["files"] = files
+        
+        if files:
+            await websocket.send_json({
+                "type": "status",
+                "data": {"status": "files_generated", "message": f"Generated {len(files)} files"}
+            })
+        
+        # Phase 4: Code Review
+        await websocket.send_json({
+            "type": "agent_message",
+            "data": {
+                "role": "Code Reviewer",
+                "message": "Reviewing generated code...",
+                "timestamp": datetime.now().isoformat()
+            }
+        })
+        
+        reviewer_chat = await create_agent_chat(session, "reviewer")
+        reviewer_prompt = f"""
+        Review the generated code for the project:
+        
+        Project: {project_name}
+        Generated Files: {list(files.keys()) if files else "None"}
+        
+        Provide feedback on:
+        1. Code quality and best practices
+        2. Security considerations
+        3. Potential improvements
+        4. Bug identification
+        5. Overall assessment
+        
+        Be constructive and specific in your feedback.
+        """
+        
+        reviewer_response = await reviewer_chat.send_message(UserMessage(text=reviewer_prompt))
+        
+        await websocket.send_json({
+            "type": "agent_message",
+            "data": {
+                "role": "Code Reviewer",
+                "message": reviewer_response,
+                "timestamp": datetime.now().isoformat()
+            }
+        })
+        
+        # Phase 5: Testing Strategy
+        await websocket.send_json({
+            "type": "agent_message",
+            "data": {
+                "role": "QA Tester",
+                "message": "Creating testing strategy...",
+                "timestamp": datetime.now().isoformat()
+            }
+        })
+        
+        tester_chat = await create_agent_chat(session, "tester")
+        tester_prompt = f"""
+        Create a comprehensive testing strategy for:
+        
+        Project: {project_name}
+        Requirements: {task}
+        Generated Files: {list(files.keys()) if files else "None"}
+        
+        Provide:
+        1. Test cases and scenarios
+        2. Edge cases to consider
+        3. Testing procedures
+        4. Quality assurance checklist
+        5. User acceptance criteria
+        
+        Focus on practical testing approaches.
+        """
+        
+        tester_response = await tester_chat.send_message(UserMessage(text=tester_prompt))
+        
+        await websocket.send_json({
+            "type": "agent_message",
+            "data": {
+                "role": "QA Tester",
+                "message": tester_response,
+                "timestamp": datetime.now().isoformat()
+            }
+        })
+        
+        # Complete the session
         session["status"] = "completed"
         await websocket.send_json({
             "type": "status",
-            "data": {"status": "completed", "message": "Project generation completed!"}
+            "data": {"status": "completed", "message": "Multi-agent development process completed successfully!"}
         })
         
     except Exception as e:
-        logger.error(f"Error in ChatDev session {session_id}: {str(e)}")
+        logger.error(f"Error in multi-agent development {session_id}: {str(e)}")
         session["status"] = "error"
         await websocket.send_json({
             "type": "error",
             "data": {"message": f"Error: {str(e)}"}
         })
+
+def parse_code_from_response(response: str) -> Dict[str, str]:
+    """Parse code files from agent response"""
+    files = {}
+    
+    # Look for patterns like **filename.ext** followed by ```language code ```
+    import re
+    
+    # Pattern to match: **filename** followed by code block
+    pattern = r'\*\*([^*]+)\*\*\s*```(?:\w+)?\s*(.*?)```'
+    matches = re.findall(pattern, response, re.DOTALL)
+    
+    for filename, code in matches:
+        filename = filename.strip()
+        code = code.strip()
+        files[filename] = code
+    
+    # If no structured format found, create a single file
+    if not files and response.strip():
+        # Try to detect the project type and create appropriate file
+        if "html" in response.lower() or "<!doctype" in response.lower():
+            files["index.html"] = response
+        elif "def " in response or "import " in response:
+            files["main.py"] = response
+        elif "function " in response or "const " in response:
+            files["app.js"] = response
+        else:
+            files["README.md"] = response
+    
+    return files
 
 @app.websocket("/api/sessions/{session_id}/ws")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
@@ -326,8 +559,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     websocket_connections[session_id] = websocket
     
     try:
-        # Start ChatDev session
-        await run_chatdev_session(session_id, websocket)
+        # Start multi-agent development process
+        await run_multi_agent_development(session_id, websocket)
         
         # Keep connection alive
         while True:
