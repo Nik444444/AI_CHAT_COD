@@ -315,7 +315,7 @@ async def run_chatdev_session(session_id: str, websocket: WebSocket):
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     """WebSocket endpoint for real-time session updates"""
     if session_id not in active_sessions:
-        await websocket.close(code=4004, reason="Session not found")
+        await websocket.close(code=1008, reason="Session not found")
         return
     
     await websocket.accept()
