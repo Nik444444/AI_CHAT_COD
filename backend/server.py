@@ -228,6 +228,15 @@ async def run_chatdev_session(session_id: str, websocket: WebSocket):
             "data": {"status": "running", "message": "Initializing ChatDev agents..."}
         })
         
+        # Check if ChatDev is available
+        if not CHATDEV_AVAILABLE:
+            await websocket.send_json({
+                "type": "error",
+                "data": {"message": "ChatDev is not available. Please check the installation and API key configuration."}
+            })
+            session["status"] = "error"
+            return
+        
         # Get configuration paths
         config_path = "/app/CompanyConfig/Default/ChatChainConfig.json"
         config_phase_path = "/app/CompanyConfig/Default/PhaseConfig.json"
