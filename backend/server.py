@@ -76,16 +76,29 @@ class SessionInfo(BaseModel):
     provider: str
 
 # Model type mapping
-MODEL_MAPPING = {
-    "openai": {
-        "GPT_3_5_TURBO": ModelType.GPT_3_5_TURBO,
-        "GPT_4": ModelType.GPT_4,
-        "GPT_4_TURBO": ModelType.GPT_4_TURBO,
-        "GPT_4O": ModelType.GPT_4O,
-        "GPT_4O_MINI": ModelType.GPT_4O_MINI,
+if CHATDEV_AVAILABLE:
+    MODEL_MAPPING = {
+        "openai": {
+            "GPT_3_5_TURBO": ModelType.GPT_3_5_TURBO,
+            "GPT_4": ModelType.GPT_4,
+            "GPT_4_TURBO": ModelType.GPT_4_TURBO,
+            "GPT_4O": ModelType.GPT_4O,
+            "GPT_4O_MINI": ModelType.GPT_4O_MINI,
+        }
+        # Gemini support will be added later
     }
-    # Gemini support will be added later
-}
+else:
+    # Fallback mapping when ChatDev is not available
+    MODEL_MAPPING = {
+        "openai": {
+            "GPT_3_5_TURBO": "GPT_3_5_TURBO",
+            "GPT_4": "GPT_4",
+            "GPT_4_TURBO": "GPT_4_TURBO",
+            "GPT_4O": "GPT_4O",
+            "GPT_4O_MINI": "GPT_4O_MINI",
+        }
+        # Gemini support will be added later
+    }
 
 @app.get("/api/health")
 async def health_check():
