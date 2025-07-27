@@ -16,8 +16,24 @@ import uvicorn
 # Import ChatDev modules
 import sys
 sys.path.append('/app')
-from chatdev.chat_chain import ChatChain
-from camel.typing import ModelType
+
+# Set a temporary API key to avoid import errors
+os.environ.setdefault('OPENAI_API_KEY', 'temporary-key-placeholder')
+
+try:
+    from chatdev.chat_chain import ChatChain
+    from camel.typing import ModelType
+    CHATDEV_AVAILABLE = True
+except ImportError as e:
+    print(f"ChatDev import failed: {e}")
+    CHATDEV_AVAILABLE = False
+    # Create a dummy ModelType class for development
+    class ModelType:
+        GPT_3_5_TURBO = "GPT_3_5_TURBO"
+        GPT_4 = "GPT_4"
+        GPT_4_TURBO = "GPT_4_TURBO"
+        GPT_4O = "GPT_4O"
+        GPT_4O_MINI = "GPT_4O_MINI"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
