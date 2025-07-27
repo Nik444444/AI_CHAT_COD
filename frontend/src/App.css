@@ -1,0 +1,86 @@
+/* Additional custom styles */
+.gradient-border {
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+  padding: 1px;
+  border-radius: 0.75rem;
+}
+
+.gradient-border-content {
+  background: #1a1b23;
+  border-radius: calc(0.75rem - 1px);
+}
+
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+}
+
+.typing-indicator span {
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  background-color: #6b7280;
+  display: inline-block;
+  margin: 0 2px;
+  animation: typing 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typing {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.chat-message {
+  animation: slideUp 0.3s ease-out;
+}
+
+.project-card:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease-out;
+}
+
+.glow {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.file-tree {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.file-tree .folder::before {
+  content: "📁 ";
+}
+
+.file-tree .file::before {
+  content: "📄 ";
+}
+
+.status-indicator {
+  position: relative;
+  overflow: hidden;
+}
+
+.status-indicator::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}

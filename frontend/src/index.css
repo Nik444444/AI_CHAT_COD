@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background-primary text-text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-accent-primary hover:bg-accent-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-background-secondary hover:bg-background-tertiary text-text-primary border border-border-primary px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  }
+  
+  .input-field {
+    @apply bg-background-secondary border border-border-primary rounded-lg px-4 py-2 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-accent-primary transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-background-secondary border border-border-primary rounded-xl p-6;
+  }
+  
+  .message-user {
+    @apply bg-accent-primary/10 border border-accent-primary/20 rounded-lg p-4 ml-8;
+  }
+  
+  .message-agent {
+    @apply bg-background-secondary border border-border-primary rounded-lg p-4 mr-8;
+  }
+  
+  .code-block {
+    @apply bg-background-primary border border-border-primary rounded-lg p-4 font-mono text-sm overflow-x-auto;
+  }
+  
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 #1f2937;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #4b5563;
+    border-radius: 3px;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent;
+  }
+}
