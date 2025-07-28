@@ -60,7 +60,8 @@ function ChatInterface() {
         'GPT_4_TURBO': 'gpt-4-turbo',
         'GPT_4': 'gpt-4',
         'GPT_3_5_TURBO': 'gpt-3.5-turbo',
-        'GEMINI_PRO': 'gemini-1.5-pro'
+        'GEMINI_PRO': 'gemini-1.5-pro',
+        'GEMINI_FLASH': 'gemini-1.5-flash'
       }
       
       const backendModelType = modelMapping[state.selectedModel] || state.selectedModel.toLowerCase().replace(/_/g, '-')
