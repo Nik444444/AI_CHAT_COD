@@ -68,7 +68,7 @@ except ImportError as e:
                 logger.error(f"Error in fallback LLM chat: {str(e)}")
                 return f"Error: Unable to process request. {str(e)}"
 
-app = FastAPI(title="ChatDev Web API", version="1.0.0")
+app = FastAPI(title="ChatDev Web API", version="1.0.1")
 
 # Configure CORS manually
 @app.middleware("http")
