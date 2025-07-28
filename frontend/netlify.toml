@@ -2,18 +2,7 @@
   publish = "dist"
   command = "yarn build"
 
-[build.environment]
-  NODE_VERSION = "18"
-
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-[context.production.environment]
-  VITE_BACKEND_URL = "https://ai-coding-51ss.onrender.com"
-  REACT_APP_BACKEND_URL = "https://ai-coding-51ss.onrender.com"
-
-[context.deploy-preview.environment]
-  VITE_BACKEND_URL = "https://ai-coding-51ss.onrender.com"
-  REACT_APP_BACKEND_URL = "https://ai-coding-51ss.onrender.com"
