@@ -209,6 +209,15 @@ async def health_check():
         "supported_providers": list(SUPPORTED_MODELS.keys())
     }
 
+@app.get("/api/cors-test")
+async def cors_test():
+    """Test endpoint for CORS validation"""
+    return {
+        "cors": "working",
+        "timestamp": datetime.now().isoformat(),
+        "origin": "allowed"
+    }
+
 @app.get("/api/sessions")
 async def get_sessions():
     """Get all active sessions"""
