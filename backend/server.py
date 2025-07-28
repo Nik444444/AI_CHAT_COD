@@ -286,9 +286,6 @@ async def get_session_files(session_id: str):
 
 async def create_agent_chat(session_data: dict, agent_role: str):
     """Create a chat instance for a specific agent role"""
-    if not EMERGENT_AVAILABLE:
-        raise Exception("EmergentIntegrations not available")
-    
     agent_config = AGENT_ROLES[agent_role]
     
     chat = LlmChat(
