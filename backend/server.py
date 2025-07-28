@@ -52,6 +52,10 @@ except ImportError as e:
             try:
                 import openai
                 
+                # Validate API key format
+                if not self.api_key or not self.api_key.startswith('sk-'):
+                    return "Ошибка: Неверный формат API ключа. API ключ должен начинаться с 'sk-'"
+                
                 # Create OpenAI client with proper error handling
                 client = openai.OpenAI(
                     api_key=self.api_key,
@@ -70,6 +74,15 @@ except ImportError as e:
                 
                 return response.choices[0].message.content
                 
+            except openai.AuthenticationError as e:
+                logger.error(f"OpenAI Authentication Error: {str(e)}")
+                return "Ошибка аутентификации: Проверьте правильность API ключа OpenAI"
+            except openai.RateLimitError as e:
+                logger.error(f"OpenAI Rate Limit Error: {str(e)}")
+                return "Ошибка лимита запросов: Превышен лимит запросов к OpenAI API"
+            except openai.APIError as e:
+                logger.error(f"OpenAI API Error: {str(e)}")
+                return f"Ошибка API OpenAI: {str(e)}"
             except Exception as e:
                 logger.error(f"Error in fallback LLM chat: {str(e)}")
                 # Return a fallback response instead of error
