@@ -14,9 +14,24 @@ from datetime import datetime
 import sys
 import os
 
-# Test configuration
-BACKEND_URL = "http://localhost:8001"
-WS_URL = "ws://localhost:8001"
+# Test configuration - Use public endpoint from frontend/.env
+import os
+from pathlib import Path
+
+# Read backend URL from frontend/.env
+frontend_env_path = Path("/app/frontend/.env")
+BACKEND_URL = "http://localhost:8001"  # fallback
+if frontend_env_path.exists():
+    with open(frontend_env_path, 'r') as f:
+        for line in f:
+            if line.startswith('REACT_APP_BACKEND_URL='):
+                BACKEND_URL = line.split('=', 1)[1].strip()
+                break
+            elif line.startswith('VITE_BACKEND_URL='):
+                BACKEND_URL = line.split('=', 1)[1].strip()
+                break
+
+WS_URL = BACKEND_URL.replace('http', 'ws')
 API_KEY = "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"
 
 class ChatDevAPITester:
