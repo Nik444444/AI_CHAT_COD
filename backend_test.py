@@ -126,7 +126,7 @@ class ChatDevAPITester:
         test_data = {
             "task": "Create a simple calculator web application with basic arithmetic operations",
             "project_name": f"TestCalculator_{int(time.time())}",
-            "model_type": "GPT_4O_MINI",
+            "model_type": "gpt-4o-mini",
             "api_key": API_KEY,
             "provider": "openai"
         }
