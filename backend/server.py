@@ -83,10 +83,13 @@ except ImportError as e:
             except openai.APIError as e:
                 logger.error(f"OpenAI API Error: {str(e)}")
                 return f"Ошибка API OpenAI: {str(e)}"
+            except openai.BadRequestError as e:
+                logger.error(f"OpenAI Bad Request Error: {str(e)}")
+                return f"Ошибка запроса к OpenAI: {str(e)}"
             except Exception as e:
                 logger.error(f"Error in fallback LLM chat: {str(e)}")
                 # Return a fallback response instead of error
-                return f"Извините, произошла ошибка при обработке запроса. Пожалуйста, проверьте ваш API ключ и попробуйте снова."
+                return f"Извините, произошла ошибка при обработке запроса: {str(e)}. Пожалуйста, проверьте ваш API ключ и попробуйте снова."
 
 app = FastAPI(title="ChatDev Web API", version="1.0.1")
 
