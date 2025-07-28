@@ -79,6 +79,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add explicit OPTIONS handler to ensure CORS works properly
+@app.options("/{full_path:path}")
+async def options_handler(request):
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "86400",
+        }
+    )
+
 # Global storage for active sessions
 active_sessions: Dict[str, Dict] = {}
 websocket_connections: Dict[str, WebSocket] = {}
