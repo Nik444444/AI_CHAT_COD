@@ -70,31 +70,14 @@ except ImportError as e:
 
 app = FastAPI(title="ChatDev Web API", version="1.0.1")
 
-# Configure CORS manually
-@app.middleware("http")
-async def cors_middleware(request, call_next):
-    response = await call_next(request)
-    
-    # Add CORS headers to all responses
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    response.headers["Access-Control-Max-Age"] = "86400"
-    
-    return response
-
-# Add explicit OPTIONS handler to ensure CORS works properly
-@app.options("/{full_path:path}")
-async def options_handler(full_path: str):
-    return Response(
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "86400",
-        }
-    )
+# Configure CORS properly using FastAPI CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Global storage for active sessions
 active_sessions: Dict[str, Dict] = {}
