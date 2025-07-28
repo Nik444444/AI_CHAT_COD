@@ -57,7 +57,7 @@ except ImportError as e:
                     return "Ошибка: Неверный формат API ключа. API ключ должен начинаться с 'sk-'"
                 
                 # Create OpenAI client with proper error handling
-                # Note: OpenAI v1+ doesn't use 'proxies' parameter in Client init
+                # FIXED: No proxies parameter in OpenAI v1+
                 client = openai.OpenAI(
                     api_key=self.api_key,
                     timeout=30.0
@@ -99,9 +99,9 @@ except ImportError as e:
                 logger.error(f"Error in fallback LLM chat: {str(e)}")
                 return f"Извините, произошла ошибка при обработке запроса: {str(e)}. Пожалуйста, проверьте ваш API ключ и попробуйте снова."
 
-app = FastAPI(title="ChatDev Web API", version="1.0.2")
+app = FastAPI(title="ChatDev Web API", version="1.0.3-fixed")
 
-# Configure CORS properly using FastAPI CORSMiddleware
+# FIXED: Configure CORS properly with all production URLs
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -141,7 +141,7 @@ class SessionInfo(BaseModel):
     model_type: str
     provider: str
 
-# Model mapping for different providers - FIXED: corrected gpt-3.5-turbo
+# FIXED: Model mapping for different providers - corrected gpt-3.5-turbo (dots not dashes)
 SUPPORTED_MODELS = {
     "openai": [
         "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo",
@@ -227,7 +227,8 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "emergent_available": EMERGENT_AVAILABLE,
         "supported_providers": list(SUPPORTED_MODELS.keys()),
-        "version": "1.0.2-fixed"
+        "version": "1.0.3-fixed",
+        "supported_models": SUPPORTED_MODELS
     }
 
 @app.get("/api/cors-test")
@@ -271,7 +272,7 @@ async def create_session(request: ProjectRequest):
         if request.model_type not in SUPPORTED_MODELS[request.provider]:
             logger.error(f"Unsupported model type: {request.model_type} for provider: {request.provider}")
             logger.info(f"Supported models for {request.provider}: {SUPPORTED_MODELS[request.provider]}")
-            raise HTTPException(status_code=400, detail=f"Unsupported model type: {request.model_type}")
+            raise HTTPException(status_code=400, detail=f"Unsupported model type: {request.model_type}. Supported models: {SUPPORTED_MODELS[request.provider]}")
         
         # Store session info
         active_sessions[session_id] = {

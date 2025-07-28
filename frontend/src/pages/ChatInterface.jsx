@@ -53,18 +53,20 @@ function ChatInterface() {
         projectName
       })
       
-      // Map frontend model IDs to backend model IDs
+      // FIXED: Map frontend model IDs to backend model IDs with correct names
       const modelMapping = {
         'GPT_4O': 'gpt-4o',
         'GPT_4O_MINI': 'gpt-4o-mini',
         'GPT_4_TURBO': 'gpt-4-turbo',
         'GPT_4': 'gpt-4',
-        'GPT_3_5_TURBO': 'gpt-3.5-turbo',
+        'GPT_3_5_TURBO': 'gpt-3.5-turbo',  // FIXED: Changed from gpt-3-5-turbo
         'GEMINI_PRO': 'gemini-1.5-pro',
         'GEMINI_FLASH': 'gemini-1.5-flash'
       }
       
       const backendModelType = modelMapping[state.selectedModel] || state.selectedModel.toLowerCase().replace(/_/g, '-')
+      
+      console.log('Creating session with model:', backendModelType)
       
       // Create session
       const response = await createSession({
@@ -82,6 +84,16 @@ function ChatInterface() {
         // Connect WebSocket
         const ws = connectWebSocket(response.session_id, (message) => {
           handleWebSocketMessage(message)
+        }, (error) => {
+          console.error('WebSocket error:', error)
+          actions.addChatMessage({
+            type: 'error',
+            content: 'Ошибка подключения к серверу',
+            timestamp: new Date().toISOString()
+          })
+        }, (event) => {
+          console.log('WebSocket closed:', event)
+          actions.setConnectionStatus(false)
         })
         
         setWebsocket(ws)
@@ -105,6 +117,8 @@ function ChatInterface() {
   }
   
   const handleWebSocketMessage = (message) => {
+    console.log('Received WebSocket message:', message)
+    
     switch (message.type) {
       case 'status':
         actions.addChatMessage({

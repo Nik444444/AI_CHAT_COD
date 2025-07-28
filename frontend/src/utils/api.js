@@ -1,6 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://ai-coding-51ss.onrender.com'
 
-// Add better error handling and logging
+// FIXED: Add better error handling and logging
 console.log('API_BASE_URL configured:', API_BASE_URL)
 
 class APIError extends Error {
@@ -43,6 +43,7 @@ export async function healthCheck() {
 
 export async function createSession(sessionData) {
   try {
+    console.log('Creating session with data:', sessionData)
     const response = await fetch(`${API_BASE_URL}/api/sessions`, {
       method: 'POST',
       headers: {
@@ -93,6 +94,8 @@ export async function getSessionFiles(sessionId) {
 
 export function connectWebSocket(sessionId, onMessage, onError, onClose) {
   const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/api/sessions/${sessionId}/ws`
+  
+  console.log('Connecting to WebSocket:', wsUrl)
   
   try {
     const ws = new WebSocket(wsUrl)
