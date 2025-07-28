@@ -51,7 +51,12 @@ except ImportError as e:
             # Fallback implementation using OpenAI directly
             try:
                 import openai
-                client = openai.OpenAI(api_key=self.api_key)
+                
+                # Create OpenAI client with proper error handling
+                client = openai.OpenAI(
+                    api_key=self.api_key,
+                    timeout=30.0
+                )
                 
                 response = client.chat.completions.create(
                     model=self.model_name,
@@ -59,14 +64,16 @@ except ImportError as e:
                         {"role": "system", "content": self.system_message},
                         {"role": "user", "content": message.text}
                     ],
-                    max_tokens=getattr(self, 'max_tokens', 4096)
+                    max_tokens=getattr(self, 'max_tokens', 4096),
+                    temperature=0.7
                 )
                 
                 return response.choices[0].message.content
                 
             except Exception as e:
                 logger.error(f"Error in fallback LLM chat: {str(e)}")
-                return f"Error: Unable to process request. {str(e)}"
+                # Return a fallback response instead of error
+                return f"Извините, произошла ошибка при обработке запроса. Пожалуйста, проверьте ваш API ключ и попробуйте снова."
 
 app = FastAPI(title="ChatDev Web API", version="1.0.1")
 
