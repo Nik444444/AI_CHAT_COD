@@ -57,7 +57,7 @@ except ImportError as e:
                     return "Ошибка: Неверный формат API ключа. API ключ должен начинаться с 'sk-'"
                 
                 # Create OpenAI client with proper error handling
-                # FIXED: No proxies parameter in OpenAI v1+
+                # FIXED: No proxies parameter in OpenAI v1+ (Force production redeploy)
                 client = openai.OpenAI(
                     api_key=self.api_key,
                     timeout=30.0
