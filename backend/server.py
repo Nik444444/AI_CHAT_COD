@@ -57,10 +57,15 @@ except ImportError as e:
                     return "Ошибка: Неверный формат API ключа. API ключ должен начинаться с 'sk-'"
                 
                 # Create OpenAI client with proper error handling
+                # Note: OpenAI v1+ doesn't use 'proxies' parameter in Client init
                 client = openai.OpenAI(
                     api_key=self.api_key,
                     timeout=30.0
                 )
+                
+                # Validate model name
+                if self.model_name not in ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo", "o1", "o1-mini", "o1-pro"]:
+                    return f"Ошибка: Неподдерживаемая модель {self.model_name}. Поддерживаемые модели: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4, gpt-3.5-turbo"
                 
                 response = client.chat.completions.create(
                     model=self.model_name,
