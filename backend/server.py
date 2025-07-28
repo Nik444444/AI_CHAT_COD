@@ -93,7 +93,13 @@ app = FastAPI(title="ChatDev Web API", version="1.0.1")
 # Configure CORS properly using FastAPI CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173", 
+        "https://kodix.netlify.app",
+        "https://ai-coding-51ss.onrender.com",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
