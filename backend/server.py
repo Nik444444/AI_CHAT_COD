@@ -24,6 +24,49 @@ try:
 except ImportError as e:
     logger.warning(f"EmergentIntegrations import failed: {e}")
     EMERGENT_AVAILABLE = False
+    
+    # Create fallback classes when emergentintegrations is not available
+    class UserMessage:
+        def __init__(self, text: str):
+            self.text = text
+    
+    class LlmChat:
+        def __init__(self, api_key: str, session_id: str, system_message: str):
+            self.api_key = api_key
+            self.session_id = session_id
+            self.system_message = system_message
+            self.model_provider = "openai"
+            self.model_name = "gpt-4o-mini"
+            
+        def with_model(self, provider: str, model: str):
+            self.model_provider = provider
+            self.model_name = model
+            return self
+            
+        def with_max_tokens(self, max_tokens: int):
+            self.max_tokens = max_tokens
+            return self
+            
+        async def send_message(self, message: UserMessage) -> str:
+            # Fallback implementation using OpenAI directly
+            try:
+                import openai
+                client = openai.OpenAI(api_key=self.api_key)
+                
+                response = client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": self.system_message},
+                        {"role": "user", "content": message.text}
+                    ],
+                    max_tokens=getattr(self, 'max_tokens', 4096)
+                )
+                
+                return response.choices[0].message.content
+                
+            except Exception as e:
+                logger.error(f"Error in fallback LLM chat: {str(e)}")
+                return f"Error: Unable to process request. {str(e)}"
 
 app = FastAPI(title="ChatDev Web API", version="1.0.0")
 
