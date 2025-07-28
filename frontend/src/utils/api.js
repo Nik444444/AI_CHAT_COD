@@ -1,5 +1,8 @@
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://ai-coding-51ss.onrender.com'
 
+// Add better error handling and logging
+console.log('API_BASE_URL configured:', API_BASE_URL)
+
 class APIError extends Error {
   constructor(message, status, data) {
     super(message)
