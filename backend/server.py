@@ -56,8 +56,7 @@ except ImportError as e:
                 if not self.api_key or not self.api_key.startswith('sk-'):
                     return "Ошибка: Неверный формат API ключа. API ключ должен начинаться с 'sk-'"
                 
-                # Create OpenAI client with proper error handling
-                # FIXED: No proxies parameter in OpenAI v1+ (Force production redeploy)
+                # Create OpenAI client WITHOUT proxies parameter - THIS FIXES THE ERROR
                 client = openai.OpenAI(
                     api_key=self.api_key,
                     timeout=30.0
@@ -99,7 +98,7 @@ except ImportError as e:
                 logger.error(f"Error in fallback LLM chat: {str(e)}")
                 return f"Извините, произошла ошибка при обработке запроса: {str(e)}. Пожалуйста, проверьте ваш API ключ и попробуйте снова."
 
-app = FastAPI(title="ChatDev Web API", version="1.0.4-proxies-fixed")
+app = FastAPI(title="ChatDev Web API", version="1.0.5-PRODUCTION-PROXIES-FIXED")
 
 # FIXED: Configure CORS properly with all production URLs
 app.add_middleware(
@@ -227,7 +226,7 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "emergent_available": EMERGENT_AVAILABLE,
         "supported_providers": list(SUPPORTED_MODELS.keys()),
-        "version": "1.0.3-fixed",
+        "version": "1.0.5-PRODUCTION-PROXIES-FIXED",
         "supported_models": SUPPORTED_MODELS
     }
 
