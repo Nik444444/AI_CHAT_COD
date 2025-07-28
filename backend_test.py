@@ -174,7 +174,7 @@ class ChatDevAPITester:
         test_data = {
             "task": "Test task",
             "project_name": "TestProject",
-            "model_type": "INVALID_MODEL",
+            "model_type": "invalid-model",
             "api_key": API_KEY,
             "provider": "openai"
         }
