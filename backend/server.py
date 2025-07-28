@@ -85,7 +85,7 @@ async def cors_middleware(request, call_next):
 
 # Add explicit OPTIONS handler to ensure CORS works properly
 @app.options("/{full_path:path}")
-async def options_handler(request):
+async def options_handler(full_path: str):
     return Response(
         status_code=200,
         headers={
