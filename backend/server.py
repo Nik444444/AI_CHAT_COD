@@ -255,13 +255,18 @@ async def get_sessions():
 async def create_session(request: ProjectRequest):
     """Create a new multi-agent development session"""
     try:
+        logger.info(f"Creating session with provider: {request.provider}, model: {request.model_type}")
+        
         session_id = str(uuid.uuid4())
         
         # Validate provider and model
         if request.provider not in SUPPORTED_MODELS:
+            logger.error(f"Unsupported provider: {request.provider}")
             raise HTTPException(status_code=400, detail=f"Unsupported provider: {request.provider}")
         
         if request.model_type not in SUPPORTED_MODELS[request.provider]:
+            logger.error(f"Unsupported model type: {request.model_type} for provider: {request.provider}")
+            logger.info(f"Supported models for {request.provider}: {SUPPORTED_MODELS[request.provider]}")
             raise HTTPException(status_code=400, detail=f"Unsupported model type: {request.model_type}")
         
         # Store session info
@@ -276,6 +281,8 @@ async def create_session(request: ProjectRequest):
             "messages": [],
             "files": {}
         }
+        
+        logger.info(f"Session {session_id} created successfully")
         
         return {
             "session_id": session_id,
