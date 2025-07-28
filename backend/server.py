@@ -99,7 +99,7 @@ except ImportError as e:
                 logger.error(f"Error in fallback LLM chat: {str(e)}")
                 return f"Извините, произошла ошибка при обработке запроса: {str(e)}. Пожалуйста, проверьте ваш API ключ и попробуйте снова."
 
-app = FastAPI(title="ChatDev Web API", version="1.0.3-fixed")
+app = FastAPI(title="ChatDev Web API", version="1.0.4-proxies-fixed")
 
 # FIXED: Configure CORS properly with all production URLs
 app.add_middleware(
