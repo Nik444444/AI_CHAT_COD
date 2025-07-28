@@ -311,17 +311,11 @@ async def run_multi_agent_development(session_id: str, websocket: WebSocket):
         
         await websocket.send_json({
             "type": "status",
-            "data": {"status": "running", "message": "Initializing AI development agents..."}
+            "data": {
+                "status": "running", 
+                "message": f"Initializing AI development agents... (Using {'EmergentIntegrations' if EMERGENT_AVAILABLE else 'Fallback'} implementation)"
+            }
         })
-        
-        # Check if EmergentIntegrations is available
-        if not EMERGENT_AVAILABLE:
-            await websocket.send_json({
-                "type": "error",
-                "data": {"message": "EmergentIntegrations is not available. Please check the installation."}
-            })
-            session["status"] = "error"
-            return
         
         project_name = session["project_name"]
         task = session["task"]
